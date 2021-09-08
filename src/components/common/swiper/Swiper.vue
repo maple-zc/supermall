@@ -52,7 +52,7 @@ export default {
       this.handleDom()
       // 开启定时器
       this.startTimer()
-    }, 100)
+    }, 200) // 延时设置太小可能导致图片为加载完，图片数量不对，小点不能出现
   },
   methods: {
     // 设置定时器

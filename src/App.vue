@@ -20,8 +20,4 @@ export default {
 
 <style scoped>
 @import "assets/css/base.css";
-
-.main-tab-bar {
-  z-index: 10;
-}
 </style>

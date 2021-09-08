@@ -5,9 +5,9 @@
     </nav-bar>
     <tab-control :titles="['流行', '新款', '精选']" :currentIndex="currentIndex" class="tab-control" @tabClick="tabClick" v-show="isTabFixed" ref="tabControl" />
     <scroll class="content" ref="scroll" :probe-type="3" @scroll="contentScroll" :pull-up-load="true" @pullingUp="loadmore">
-      <home-swiper :banners="banners" @swiperImageLoad="swiperImageLoad" />
-      <recommend-view :recommends="recommends" />
-      <feature-view />
+      <home-swiper :banners="banners" @imageLoad="imageLoad" />
+      <recommend-view :recommends="recommends" @imageLoad="imageLoad" />
+      <feature-view @imageLoad="imageLoad" />
       <tab-control :titles="['流行', '新款', '精选']" :currentIndex="currentIndex" @tabClick="tabClick" ref="tabControl" />
       <goods-list :goods="showGoods" />
     </scroll>
@@ -24,10 +24,9 @@ import NavBar from "components/common/navbar/NavBar.vue"
 import TabControl from "components/content/tabControl/TabControl.vue"
 import GoodsList from "components/content/goods/GoodsList"
 import Scroll from "components/common/scroll/Scroll"
-import BackTop from "components/content/backTop/BackTop"
 
 import { getHomeMultidata, getHomeGoods } from "network/home.js"
-import { debounce } from "common/utils"
+import { itemListenerMixin, backTopMixin } from "common/mixin"
 
 export default {
   name: "Home",
@@ -38,9 +37,9 @@ export default {
     NavBar,
     TabControl,
     GoodsList,
-    Scroll,
-    BackTop
+    Scroll
   },
+  mixins: [itemListenerMixin, backTopMixin],
   data() {
     return {
       banners: [],
@@ -61,9 +60,9 @@ export default {
       },
       currentType: "pop",
       currentIndex: 0,
-      isShowBackTop: false,
       tabOffsetTop: 0,
-      isTabFixed: false
+      isTabFixed: false,
+      saveY: 0
     }
   },
   computed: {
@@ -80,15 +79,16 @@ export default {
     this.getHomeGoods("new")
     this.getHomeGoods("sell")
   },
-  mounted() {
-    // 监听item中的图片加载完成
-    const refresh = debounce(this.$refs.scroll.refresh, 10)
-    this.$bus.$on("itemImageLoad", () => {
-      refresh()
-    })
+  mounted() {},
+  destroyed() {},
+  activated() {
+    this.$refs.scroll.scrollTo(0, this.saveY, 0)
+    this.$refs.scroll.refresh()
+    this.$bus.$on("itemImageLoad", this.itemImgListener)
   },
-  destroyed() {
-    console.log("destroyed")
+  deactivated() {
+    this.saveY = this.$refs.scroll.scrollY
+    this.$bus.$off("itemImageLoad", this.itemImgListener)
   },
   methods: {
     // 事件监听相关的方法
@@ -106,9 +106,6 @@ export default {
       }
       this.currentIndex = index
     },
-    backClick() {
-      this.$refs.scroll.scrollTo(0, 0)
-    },
     contentScroll(position) {
       // 判断backTop是否显示
       this.isShowBackTop = -position.y > 1000
@@ -119,7 +116,7 @@ export default {
       this.getHomeGoods(this.currentType)
       this.$refs.scroll.finishPullUp()
     },
-    swiperImageLoad() {
+    imageLoad() {
       this.tabOffsetTop = this.$refs.tabControl.$el.offsetTop
     },
 

@@ -20,10 +20,18 @@ export default {
   components: {
     NavBar
   },
+  props: {
+    currentIndex: {
+      type: Number,
+      default() {
+        return 0
+      }
+    }
+  },
   data() {
     return {
       titles: ["商品", "参数", "评论", "推荐"],
-      currentIndex: 0
+      // currentIndex: 0
     }
   },
   methods: {
@@ -31,7 +39,7 @@ export default {
       this.$router.back()
     },
     titleClick(index) {
-      this.currentIndex = index
+      this.$emit('titleClick', index)
     }
   }
 }

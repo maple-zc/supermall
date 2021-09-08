@@ -1,136 +1,166 @@
 <template>
-  <div class="wrapper">
-    <ul class="content">
-      <li>第1行</li>
-      <li>第2行</li>
-      <li>第3行</li>
-      <li>第4行</li>
-      <li>第5行</li>
-      <li>第6行</li>
-      <li>第7行</li>
-      <li>第8行</li>
-      <li>第9行</li>
-      <li>第10行</li>
-      <li>第11行</li>
-      <li>第12行</li>
-      <li>第13行</li>
-      <li>第14行</li>
-      <li>第15行</li>
-      <li>第16行</li>
-      <li>第17行</li>
-      <li>第18行</li>
-      <li>第19行</li>
-      <li>第20行</li>
-      <li>第21行</li>
-      <li>第22行</li>
-      <li>第23行</li>
-      <li>第24行</li>
-      <li>第25行</li>
-      <li>第26行</li>
-      <li>第27行</li>
-      <li>第28行</li>
-      <li>第29行</li>
-      <li>第30行</li>
-      <li>第31行</li>
-      <li>第32行</li>
-      <li>第33行</li>
-      <li>第34行</li>
-      <li>第35行</li>
-      <li>第36行</li>
-      <li>第37行</li>
-      <li>第38行</li>
-      <li>第39行</li>
-      <li>第40行</li>
-      <li>第41行</li>
-      <li>第42行</li>
-      <li>第43行</li>
-      <li>第44行</li>
-      <li>第45行</li>
-      <li>第46行</li>
-      <li>第47行</li>
-      <li>第48行</li>
-      <li>第49行</li>
-      <li>第50行</li>
-      <li>第51行</li>
-      <li>第52行</li>
-      <li>第53行</li>
-      <li>第54行</li>
-      <li>第55行</li>
-      <li>第56行</li>
-      <li>第57行</li>
-      <li>第58行</li>
-      <li>第59行</li>
-      <li>第60行</li>
-      <li>第61行</li>
-      <li>第62行</li>
-      <li>第63行</li>
-      <li>第64行</li>
-      <li>第65行</li>
-      <li>第66行</li>
-      <li>第67行</li>
-      <li>第68行</li>
-      <li>第69行</li>
-      <li>第70行</li>
-      <li>第71行</li>
-      <li>第72行</li>
-      <li>第73行</li>
-      <li>第74行</li>
-      <li>第75行</li>
-      <li>第76行</li>
-      <li>第77行</li>
-      <li>第78行</li>
-      <li>第79行</li>
-      <li>第80行</li>
-      <li>第81行</li>
-      <li>第82行</li>
-      <li>第83行</li>
-      <li>第84行</li>
-      <li>第85行</li>
-      <li>第86行</li>
-      <li>第87行</li>
-      <li>第88行</li>
-      <li>第89行</li>
-      <li>第90行</li>
-      <li>第91行</li>
-      <li>第92行</li>
-      <li>第93行</li>
-      <li>第94行</li>
-      <li>第95行</li>
-      <li>第96行</li>
-      <li>第97行</li>
-      <li>第98行</li>
-      <li>第99行</li>
-      <li>第100行</li>
-    </ul>
+  <div class="category">
+    <nav-bar class="nav-bar">
+      <div slot="center">商品分类</div>
+    </nav-bar>
+    <div class="content">
+      <tab-menu :categories="categories" @selectItem="selectItem"></tab-menu>
+      <scroll class="tab-content" ref="scroll">
+        <tab-content-category :subcategories="showSubcategory"></tab-content-category>
+        <tab-control :titles="['综合', '新品  ', '销量']" :currentIndex="tabIndex" @tabClick="tabClick"></tab-control>
+        <goods-list :goods="showCategoryDetail"></goods-list>
+      </scroll>
+    </div>
   </div>
 </template>
 
 <script>
-import BScroll from "better-scroll"
+import NavBar from "components/common/navbar/NavBar"
+import TabControl from "components/content/tabControl/TabControl"
+import GoodsList from "components/content/goods/GoodsList"
+
+import TabMenu from "./childComps/TabMenu.vue"
+import TabContentCategory from "./childComps/TabContentCategory.vue"
+
+import Scroll from "components/common/scroll/Scroll"
+
+import { itemListenerMixin } from "common/mixin"
+
+import {
+  getCategory,
+  getSubcategory,
+  getCategoryDetail
+} from "network/category"
 
 export default {
   name: "Category",
+  components: {
+    NavBar,
+    TabMenu,
+    TabContentCategory,
+    Scroll,
+    TabControl,
+    GoodsList
+  },
+  mixins: [itemListenerMixin],
   data() {
     return {
-      scroll: null
+      categories: [],
+      categoryData: [],
+      currentIndex: -1,
+      currentType: "pop",
+      tabIndex: 0,
+      saveY: 0
     }
   },
-  mounted() {
-    this.scroll = new BScroll(".wrapper", {
-      probeType: 3
-    })
-    this.scroll.on("scroll", (position) => {
-      console.log(position)
-    })
+  computed: {
+    showSubcategory() {
+      if (this.currentIndex === -1) return {}
+      return this.categoryData[this.currentIndex].subcategories
+    },
+    showCategoryDetail() {
+      if (this.currentIndex === -1) return []
+      return this.categoryData[this.currentIndex].categoryDetail[
+        this.currentType
+      ]
+    }
   },
-  methods: {}
+  created() {
+    // 1.请求分类数据
+    this._getCategory()
+  },
+  activated() {
+    this.$refs.scroll.refresh()
+    this.$bus.$on("itemImageLoad", this.itemImgListener)
+  },
+  deactivated() {
+    this.$bus.$off("itemImageLoad", this.itemImgListener)
+  },
+  methods: {
+    _getCategory() {
+      getCategory().then((res) => {
+        // 1.获取分类数据
+        this.categories = res.data.category.list
+
+        // 2.初始化每个类别的子数据
+        for (let i = 0; i < this.categories.length; i++) {
+          this.categoryData[i] = {
+            subcategories: {},
+            categoryDetail: {
+              pop: [],
+              new: [],
+              sell: []
+            }
+          }
+        }
+
+        // 3.请求第一个分类的数据
+        this._getSubcategories(0)
+      })
+    },
+    _getSubcategories(index) {
+      this.currentIndex = index
+      const mailKey = this.categories[index].maitKey
+      getSubcategory(mailKey).then((res) => {
+        console.log(res)
+        this.categoryData[index].subcategories = res.data
+        this.categoryData = { ...this.categoryData }
+        this._getCategoryDetail("pop")
+        this._getCategoryDetail("sell")
+        this._getCategoryDetail("new")
+      })
+    },
+    _getCategoryDetail(type) {
+      // 1.获取请求的miniWallKey
+      const miniWallKey = this.categories[this.currentIndex].miniWallkey
+      // 2.发送请求，传入muniWallKey和type
+      getCategoryDetail(miniWallKey, type).then((res) => {
+        // 3.将获取的数据保存下来
+        this.categoryData[this.currentIndex].categoryDetail[type] = res
+        this.categoryData = { ...this.categoryData }
+      })
+    },
+    selectItem(index) {
+      this._getSubcategories(index)
+    },
+    tabClick(index) {
+      this.tabIndex = index
+      switch (index) {
+        case 0:
+          this.currentType = "pop"
+          break
+        case 1:
+          this.currentType = "sell"
+          break
+        case 2:
+          this.currentType = "new"
+          break
+        default:
+          break
+      }
+    }
+  }
 }
 </script>
 
 <style scoped>
-.wrapper {
-  height: 200px;
-  background-color: blanchedalmond;
+.category {
+  height: 100vh;
+}
+
+.nav-bar {
+  background-color: var(--color-tint);
+  color: #fff;
+}
+
+.content {
+  height: calc(100% - 44px - 49px);
+  display: flex;
+}
+
+.tab-content {
+  height: 100%;
+  flex: 1;
   overflow: hidden;
 }
 </style>

@@ -26,6 +26,11 @@ export default {
       dafault: false
     }
   },
+  computed: {
+    scrollY() {
+      return this.scroll.y
+    }
+  },
   mounted() {
     this.scroll = new BScroll(this.$refs.wrapper, {
       click: true, // 此处不设置true，tab-control不能点击
